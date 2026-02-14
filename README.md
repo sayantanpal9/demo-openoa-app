@@ -357,3 +357,4 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 [^14]: Jing, B., Qian, Z., Pei, Y., Zhang, L., and Yang, T. Improving wind turbine efficiency through detection and calibration of yaw misalignment. *Renewable Energy* 160:1217-1227 (2020). https://doi.org/10.1016/j.renene.2020.07.063.
 
 [^15]: Gao, L. and Hong, J. Data-driven yaw misalignment correction for utility-scale wind turbines. *J. Renewable Sustainable Energy* 13(6):063302 (2021). https://doi.org/10.1063/5.0056671.
+# demo-openoa-app
