@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import folium
-from streamlit_folium import st_folium
 
 # -----------------------------
 # PAGE CONFIG
@@ -24,7 +22,6 @@ st.title("Wind Farm Monitoring Dashboard")
 def load_data():
     df = pd.read_csv("wind_turbine_scada.csv")
 
-    # Rename columns if needed (adjust based on your file)
     rename_map = {
         "Date/Time": "time",
         "LV ActivePower (kW)": "power",
@@ -35,15 +32,13 @@ def load_data():
 
     df.rename(columns=rename_map, inplace=True)
 
-    df["time"] = pd.to_datetime(df["time"],dayfirst=True)
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True)
 
-    # Generate additional turbine parameters
     np.random.seed(42)
 
     df["temperature"] = 30 + df["power"] * 0.005 + np.random.randn(len(df)) * 2
     df["rotor_speed"] = df["wind_speed"] * 0.8 + np.random.randn(len(df)) * 0.5
 
-    # Generate fake turbine locations
     df["lat"] = 22.5 + np.random.randn(len(df)) * 0.05
     df["lon"] = 88.3 + np.random.randn(len(df)) * 0.05
 
@@ -54,15 +49,11 @@ df = load_data()
 # -----------------------------
 # CALCULATIONS
 # -----------------------------
-# Assume 10 min intervals
 interval_hours = 10 / 60
 
-AEP = df["power"].sum() * interval_hours / 1000  # MWh
-
+AEP = df["power"].sum() * interval_hours / 1000
 expected_energy = df["expected_power"].sum() * interval_hours / 1000
-
 efficiency = (AEP / expected_energy) * 100
-
 total_loss = expected_energy - AEP
 
 active_turbines = int(0.95 * 50)
@@ -77,25 +68,10 @@ st.subheader("Plant Overview")
 
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric(
-    "Annual Energy Production",
-    f"{AEP:.2f} MWh"
-)
-
-col2.metric(
-    "Operational Efficiency",
-    f"{efficiency:.2f}%"
-)
-
-col3.metric(
-    "Active Turbines",
-    f"{active_turbines}/{total_turbines}"
-)
-
-col4.metric(
-    "Active Alerts",
-    alerts
-)
+col1.metric("Annual Energy Production", f"{AEP:.2f} MWh")
+col2.metric("Operational Efficiency", f"{efficiency:.2f}%")
+col3.metric("Active Turbines", f"{active_turbines}/{total_turbines}")
+col4.metric("Active Alerts", alerts)
 
 # -----------------------------
 # ENERGY PRODUCTION CHART
@@ -110,10 +86,7 @@ with col1:
         x="time",
         y=["power", "expected_power"],
         title="Actual vs Expected Power Output",
-        labels={
-            "value": "Power (kW)",
-            "time": "Time"
-        }
+        labels={"value": "Power (kW)", "time": "Time"}
     )
     st.plotly_chart(fig_energy, use_container_width=True)
 
@@ -157,56 +130,56 @@ with col2:
     )
     st.plotly_chart(fig_rotor, use_container_width=True)
 
-# Power curve
 fig_curve = px.scatter(
     df,
     x="wind_speed",
     y="power",
     title="Power Curve (Wind Speed vs Power Output)",
-    labels={
-        "wind_speed": "Wind Speed (m/s)",
-        "power": "Power (kW)"
-    }
+    labels={"wind_speed": "Wind Speed (m/s)", "power": "Power (kW)"}
 )
 
 st.plotly_chart(fig_curve, use_container_width=True)
 
 # -----------------------------
-# MAP VIEW
+# MAP VIEW (Plotly version)
 # -----------------------------
 st.subheader("Geographic Turbine Locations")
 
-map_center = [df["lat"].mean(), df["lon"].mean()]
+map_df = df.iloc[:50].copy()
 
-m = folium.Map(location=map_center, zoom_start=8)
+map_df["status"] = np.where(
+    np.random.rand(len(map_df)) < 0.1,
+    "Fault",
+    "Healthy"
+)
 
-for i in range(50):
-    color = "green"
+fig_map = px.scatter_mapbox(
+    map_df,
+    lat="lat",
+    lon="lon",
+    color="status",
+    size="power",
+    hover_data=["wind_speed", "temperature", "rotor_speed"],
+    zoom=8,
+    height=500,
+    title="Turbine Locations"
+)
 
-    if np.random.rand() < 0.1:
-        color = "red"
+fig_map.update_layout(
+    mapbox_style="open-street-map",
+    margin=dict(l=0, r=0, t=40, b=0)
+)
 
-    folium.Marker(
-        location=[df["lat"].iloc[i], df["lon"].iloc[i]],
-        popup=f"Turbine {i+1}",
-        icon=folium.Icon(color=color)
-    ).add_to(m)
-
-st_folium(m, width=1000, height=500)
+st.plotly_chart(fig_map, use_container_width=True)
 
 # -----------------------------
 # TURBINE DATA TABLE
 # -----------------------------
 st.subheader("Turbine Data")
 
-display_df = df[[
-    "time",
-    "power",
-    "expected_power",
-    "wind_speed",
-    "temperature",
-    "rotor_speed"
-]].tail(100)
+display_df = df[
+    ["time", "power", "expected_power", "wind_speed", "temperature", "rotor_speed"]
+].tail(100)
 
 st.dataframe(display_df, use_container_width=True)
 
