@@ -1,3 +1,7 @@
 streamlit
 pandas
+numpy
+plotly
+folium
+streamlit-folium
 git+https://github.com/NatLabRockies/OpenOA.git
